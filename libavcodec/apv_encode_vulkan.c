@@ -766,18 +766,20 @@ static av_cold int vulkan_encode_apv_init(AVCodecContext *avctx)
     ev->frame_mb_x = (avctx->width  + APV_MB_WIDTH  - 1) / APV_MB_WIDTH;
     ev->frame_mb_y = (avctx->height + APV_MB_HEIGHT - 1) / APV_MB_HEIGHT;
 
-    /* The 20x20 tile grid cap is structural (fixed-size arrays everywhere);
-     * the spec additionally demands tiles of at least 16x8 MBs. Each
-     * tile-component maps to one entropy workgroup, one invocation per
-     * transform block. */
-    int grid_tw = (ev->frame_mb_x + APV_MAX_TILE_COLS - 1) / APV_MAX_TILE_COLS;
-    int grid_th = (ev->frame_mb_y + APV_MAX_TILE_ROWS - 1) / APV_MAX_TILE_ROWS;
-    int min_tw = FFMAX(APV_MIN_TILE_WIDTH_IN_MBS,  grid_tw);
-    int min_th = FFMAX(APV_MIN_TILE_HEIGHT_IN_MBS, grid_th);
+    /* The spec limits tiles to at least 16x8 MBs and the tile grid to 20x20.
+     * The fixed-size arrays are sized for the larger APV_MAX_TILE_COLS_EXT x
+     * APV_MAX_TILE_ROWS_EXT grid. Each tile-component maps to one entropy
+     * workgroup, one invocation per transform block. */
+    int spec_tw = (ev->frame_mb_x + APV_MAX_TILE_COLS - 1) / APV_MAX_TILE_COLS;
+    int spec_th = (ev->frame_mb_y + APV_MAX_TILE_ROWS - 1) / APV_MAX_TILE_ROWS;
+    int grid_tw = (ev->frame_mb_x + APV_MAX_TILE_COLS_EXT - 1) / APV_MAX_TILE_COLS_EXT;
+    int grid_th = (ev->frame_mb_y + APV_MAX_TILE_ROWS_EXT - 1) / APV_MAX_TILE_ROWS_EXT;
+    int min_tw = FFMAX(APV_MIN_TILE_WIDTH_IN_MBS,  spec_tw);
+    int min_th = FFMAX(APV_MIN_TILE_HEIGHT_IN_MBS, spec_th);
 
     /* tile_w/tile_h pick the tile size in MBs; 0 selects the spec minimum.
-     * An explicit request below the spec minimum is honoured down to the
-     * grid cap -- non-conformant, but more tiles mean shorter (serial)
+     * An explicit request below the spec limits is honoured down to the
+     * extended grid -- non-conformant, but more tiles mean shorter (serial)
      * entropy streams, which is the decode speed lever. */
     ev->tile_mb_w = ev->tile_w_mbs_opt > 0 ? ev->tile_w_mbs_opt : min_tw;
     ev->tile_mb_h = ev->tile_h_mbs_opt > 0 ? ev->tile_h_mbs_opt : min_th;
@@ -790,6 +792,12 @@ static av_cold int vulkan_encode_apv_init(AVCodecContext *avctx)
                "NON-CONFORMANT bitstream, most decoders will reject it.\n",
                ev->tile_mb_w, ev->tile_mb_h,
                APV_MIN_TILE_WIDTH_IN_MBS, APV_MIN_TILE_HEIGHT_IN_MBS);
+    else if (ev->tile_mb_w < spec_tw || ev->tile_mb_h < spec_th)
+        av_log(avctx, AV_LOG_WARNING,
+               "Tile size %dx%d MBs gives more than %dx%d tiles: "
+               "NON-CONFORMANT bitstream, most decoders will reject it.\n",
+               ev->tile_mb_w, ev->tile_mb_h,
+               APV_MAX_TILE_COLS, APV_MAX_TILE_ROWS);
 
     /* Left to default, grow the tile toward 1024 transform blocks (the
      * entropy workgroup ceiling) while it still divides the frame. Bigger

@@ -91,8 +91,8 @@ typedef struct APVDerivedTileInfo {
     uint16_t num_tiles;
     // The spec uses an extra element on the end of these arrays
     // not corresponding to any tile.
-    uint16_t col_starts[APV_MAX_TILE_COLS + 1];
-    uint16_t row_starts[APV_MAX_TILE_ROWS + 1];
+    uint16_t col_starts[APV_MAX_TILE_COLS_EXT + 1];
+    uint16_t row_starts[APV_MAX_TILE_ROWS_EXT + 1];
 } APVDerivedTileInfo;
 
 typedef struct APVDecodeContext {

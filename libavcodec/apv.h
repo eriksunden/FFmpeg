@@ -74,7 +74,16 @@ enum {
     APV_MIN_TILE_HEIGHT_IN_MBS = 8,
     APV_MAX_TILE_COLS          = 20,
     APV_MAX_TILE_ROWS          = 20,
-    APV_MAX_TILE_COUNT         = APV_MAX_TILE_COLS * APV_MAX_TILE_ROWS,
+};
+
+// Tile grid supported by the decoder and the Vulkan encoder. It is larger than the
+// 20x20 grid of the level limits so that non-conformant streams with more, smaller
+// tiles can be used: tiles are entropy-decoded independently, so more tiles allow
+// more parallel decoding. Streams within the level limits are unaffected.
+enum {
+    APV_MAX_TILE_COLS_EXT      = 64,
+    APV_MAX_TILE_ROWS_EXT      = 64,
+    APV_MAX_TILE_COUNT         = APV_MAX_TILE_COLS_EXT * APV_MAX_TILE_ROWS_EXT,
 };
 
 // Metadata types (section 10.3.1).

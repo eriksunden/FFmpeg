@@ -25,8 +25,8 @@
 #include "common.glsl"
 
 #define APV_MAX_NUM_COMP    4
-#define APV_MAX_TILE_COLS   20
-#define APV_MAX_TILE_ROWS   20
+#define APV_MAX_TILE_COLS   64 /* APV_MAX_TILE_COLS_EXT in apv.h */
+#define APV_MAX_TILE_ROWS   64 /* APV_MAX_TILE_ROWS_EXT in apv.h */
 #define APV_MAX_TILE_COUNT  (APV_MAX_TILE_COLS * APV_MAX_TILE_ROWS)
 #define APV_MIN_TRANS_COEFF -32768
 #define APV_MAX_TRANS_COEFF 32767

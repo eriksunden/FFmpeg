@@ -116,13 +116,14 @@ static int FUNC(tile_info)(CodedBitstreamContext *ctx, RWContext *rw,
     int frame_width_in_mbs   = (fh->frame_info.frame_width  + 15) / 16;
     int frame_height_in_mbs  = (fh->frame_info.frame_height + 15) / 16;
     /* The spec also demands tile_width >= APV_MIN_TILE_WIDTH_IN_MBS (16)
-     * and tile_height >= APV_MIN_TILE_HEIGHT_IN_MBS (8); we deliberately
-     * accept smaller tiles (down to the 20x20 grid cap, which the fixed
-     * arrays rely on) so sub-minimum experimental streams keep working. */
-    uint32_t min_tile_width  = (frame_width_in_mbs + APV_MAX_TILE_COLS - 1) /
-                               APV_MAX_TILE_COLS;
-    uint32_t min_tile_height = (frame_height_in_mbs + APV_MAX_TILE_ROWS - 1) /
-                               APV_MAX_TILE_ROWS;
+     * and tile_height >= APV_MIN_TILE_HEIGHT_IN_MBS (8), and at most a
+     * 20x20 tile grid; we deliberately accept smaller tiles (down to the
+     * extended APV_MAX_TILE_COLS_EXT x APV_MAX_TILE_ROWS_EXT grid, which
+     * the fixed arrays rely on) so streams with more tiles keep working. */
+    uint32_t min_tile_width  = (frame_width_in_mbs + APV_MAX_TILE_COLS_EXT - 1) /
+                               APV_MAX_TILE_COLS_EXT;
+    uint32_t min_tile_height = (frame_height_in_mbs + APV_MAX_TILE_ROWS_EXT - 1) /
+                               APV_MAX_TILE_ROWS_EXT;
     int err;
 
     u(20, tile_width_in_mbs,  min_tile_width,  MAX_UINT_BITS(20));

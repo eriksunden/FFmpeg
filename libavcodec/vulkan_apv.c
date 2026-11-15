@@ -87,7 +87,7 @@ static int vk_apv_start_frame(AVCodecContext          *avctx,
     /* Allocate frame data buffer */
     int fd_size = (2*4*APV_MAX_TILE_COUNT)*APV_MAX_NUM_COMP +
                   (64 + APV_MAX_TILE_COUNT)*APV_MAX_NUM_COMP +
-                  (APV_MAX_TILE_COLS + 1 + APV_MAX_TILE_ROWS + 1)*2;
+                  (APV_MAX_TILE_COLS_EXT + 1 + APV_MAX_TILE_ROWS_EXT + 1)*2;
 
     err = ff_vk_get_pooled_buffer(&ctx->s, &apvvk->frame_data_pool,
                                   &apvvp->frame_data_buf,
@@ -119,9 +119,9 @@ static int vk_apv_start_frame(AVCodecContext          *avctx,
     }
 
     /* tile col/row offset */
-    memcpy(fd, apv->tile_info.col_starts, (APV_MAX_TILE_COLS+1)*2);
-    fd += (APV_MAX_TILE_COLS+1)*2;
-    memcpy(fd, apv->tile_info.row_starts, (APV_MAX_TILE_ROWS+1)*2);
+    memcpy(fd, apv->tile_info.col_starts, (APV_MAX_TILE_COLS_EXT+1)*2);
+    fd += (APV_MAX_TILE_COLS_EXT+1)*2;
+    memcpy(fd, apv->tile_info.row_starts, (APV_MAX_TILE_ROWS_EXT+1)*2);
 
     return 0;
 }

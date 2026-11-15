@@ -46,7 +46,7 @@ static void cbs_apv_derive_tile_info(CodedBitstreamContext *ctx,
     int tile_cols = (frame_width_in_mbs  + fh->tile_info.tile_width_in_mbs - 1)  / fh->tile_info.tile_width_in_mbs;
     int tile_rows = (frame_height_in_mbs + fh->tile_info.tile_height_in_mbs - 1) / fh->tile_info.tile_height_in_mbs;
 
-    av_assert0(tile_cols <= APV_MAX_TILE_COLS && tile_rows <= APV_MAX_TILE_ROWS);
+    av_assert0(tile_cols <= APV_MAX_TILE_COLS_EXT && tile_rows <= APV_MAX_TILE_ROWS_EXT);
 
     priv->num_tiles = tile_cols * tile_rows;
 }

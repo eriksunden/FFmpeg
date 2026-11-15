@@ -172,6 +172,30 @@ static inline int get_min_profile(enum AVPixelFormat pix_fmt)
     }
 }
 
+/* liboapv's UNCONST profiles ("422-10-UNCONST", ...) lift the tile size and tile
+ * grid limits of the APV profile they extend; they take the same pixel formats.
+ * Returns that profile, or the given profile when it is not an UNCONST one. */
+static int base_profile(int profile)
+{
+#ifdef OAPV_PROFILE_422_10_UNCONST
+    switch (profile) {
+    case OAPV_PROFILE_422_10_UNCONST:  return AV_PROFILE_APV_422_10;
+    case OAPV_PROFILE_422_12_UNCONST:  return AV_PROFILE_APV_422_12;
+    case OAPV_PROFILE_444_10_UNCONST:  return AV_PROFILE_APV_444_10;
+    case OAPV_PROFILE_444_12_UNCONST:  return AV_PROFILE_APV_444_12;
+    case OAPV_PROFILE_4444_10_UNCONST: return AV_PROFILE_APV_4444_10;
+    case OAPV_PROFILE_4444_12_UNCONST: return AV_PROFILE_APV_4444_12;
+    case OAPV_PROFILE_400_10_UNCONST:  return AV_PROFILE_APV_400_10;
+    }
+#endif
+    return profile;
+}
+
+static int profile_is_unconst(int profile)
+{
+    return base_profile(profile) != profile;
+}
+
 static int profile_is_compatible(enum AVPixelFormat pix_fmt, int profile)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
@@ -180,7 +204,7 @@ static int profile_is_compatible(enum AVPixelFormat pix_fmt, int profile)
 
     av_assert0(desc);
 
-    switch (profile) {
+    switch (base_profile(profile)) {
     case AV_PROFILE_APV_422_10:
         return chroma_format_idc == APV_CHROMA_FORMAT_422 && bit_depth == 10;
     case AV_PROFILE_APV_422_12:
@@ -402,6 +426,32 @@ static int get_conf(AVCodecContext *avctx, oapve_cdesc_t *cdsc)
     ret = validate_profile(avctx, cdsc->param[FRM_IDX].profile_idc);
     if (ret < 0)
         return ret;
+
+    if (profile_is_unconst(cdsc->param[FRM_IDX].profile_idc)) {
+        /* liboapv does not limit the tile grid for the UNCONST profiles, but
+         * the decoder supports at most APV_MAX_TILE_COLS_EXT x
+         * APV_MAX_TILE_ROWS_EXT tiles: enlarge smaller tiles to fit. */
+        oapve_param_t *param = &cdsc->param[FRM_IDX];
+        const int frame_mb_x = (avctx->width  + APV_MB_WIDTH  - 1) / APV_MB_WIDTH;
+        const int frame_mb_y = (avctx->height + APV_MB_HEIGHT - 1) / APV_MB_HEIGHT;
+        const int min_tile_w = (frame_mb_x + APV_MAX_TILE_COLS_EXT - 1) / APV_MAX_TILE_COLS_EXT * APV_MB_WIDTH;
+        const int min_tile_h = (frame_mb_y + APV_MAX_TILE_ROWS_EXT - 1) / APV_MAX_TILE_ROWS_EXT * APV_MB_HEIGHT;
+        if (param->tile_w < min_tile_w || param->tile_h < min_tile_h) {
+            av_log(avctx, AV_LOG_WARNING,
+                   "Tile size %dx%d gives more than %dx%d tiles; using %dx%d.\n",
+                   param->tile_w, param->tile_h,
+                   APV_MAX_TILE_COLS_EXT, APV_MAX_TILE_ROWS_EXT,
+                   FFMAX(param->tile_w, min_tile_w), FFMAX(param->tile_h, min_tile_h));
+            param->tile_w = FFMAX(param->tile_w, min_tile_w);
+            param->tile_h = FFMAX(param->tile_h, min_tile_h);
+        }
+        av_log(avctx, AV_LOG_WARNING,
+               "UNCONST profile: tiles may be smaller than %dx%d MBs or more "
+               "than %dx%d per frame. NON-CONFORMANT bitstream, most decoders "
+               "will reject it.\n",
+               APV_MIN_TILE_WIDTH_IN_MBS, APV_MIN_TILE_HEIGHT_IN_MBS,
+               APV_MAX_TILE_COLS, APV_MAX_TILE_ROWS);
+    }
 
     avctx->profile = cdsc->param[FRM_IDX].profile_idc;
 

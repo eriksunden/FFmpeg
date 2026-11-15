@@ -26,8 +26,8 @@
 #include "dct.glsl"
 
 #define APV_MAX_NUM_COMP    4
-#define APV_MAX_TILE_COLS   20
-#define APV_MAX_TILE_ROWS   20
+#define APV_MAX_TILE_COLS   64 /* APV_MAX_TILE_COLS_EXT in apv.h */
+#define APV_MAX_TILE_ROWS   64 /* APV_MAX_TILE_ROWS_EXT in apv.h */
 #define APV_MAX_TILE_COUNT  (APV_MAX_TILE_COLS * APV_MAX_TILE_ROWS)
 #define APV_TR_SIZE         8
 #define APV_BLOCKS_PER_WG   8
